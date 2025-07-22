@@ -5,52 +5,57 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.ensemble import RandomForestClassifier
 
 # Title
-st.title("Employee Salary Prediction App")
+st.title("Income Prediction Web App")
+st.write("This app predicts whether a person's income is >50K or <=50K")
 
-# Load dataset
-@st.cache_data
-def load_data():
-    df = pd.read_csv("adult 3.csv")  # 🔁 REPLACE WITH YOUR FILE PATH
-    return df
+# Upload dataset
+uploaded_file = st.file_uploader("Upload CSV file", type="csv")
+if uploaded_file is not None:
+    df = pd.read_csv(uploaded_file)
 
-data = load_data()
+    st.write("### Raw Data", df.head())
 
-# Encode categorical columns
-def preprocess(df):
-    df = df.copy()
-    for col in df.select_dtypes(include='object').columns:
-        df[col] = LabelEncoder().fit_transform(df[col].astype(str))
-    return df
+    # Handle missing values
+    df.replace(" ?", pd.NA, inplace=True)
+    df.dropna(inplace=True)
 
-# Preprocessing
-df_clean = preprocess(data)
+    # Encode categorical features
+    df_clean = df.copy()
+    label_encoders = {}
+    for col in df_clean.select_dtypes(include='object').columns:
+        le = LabelEncoder()
+        df_clean[col] = le.fit_transform(df_clean[col])
+        label_encoders[col] = le
 
-# Split into features and target
-X = df_clean.drop('salary', axis=1)  # 🔁 Change 'salary' if your column name differs
-y = df_clean['salary']
+    # Features and target
+    X = df_clean.drop('income', axis=1)
+    y = df_clean['income']
 
-# Train-test split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    # Train-test split
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Train model inside app
-model = RandomForestClassifier()
-model.fit(X_train, y_train)
+    # Model
+    model = RandomForestClassifier()
+    model.fit(X_train, y_train)
 
-# User input section
-st.sidebar.header("Input Employee Features")
+    # User input
+    st.write("### Enter New User Data")
+    user_input = {}
+    for col in X.columns:
+        if df[col].dtype == 'object':
+            options = df[col].dropna().unique().tolist()
+            user_input[col] = st.selectbox(col, options)
+        else:
+            user_input[col] = st.number_input(col, value=float(df[col].median()))
 
-input_data = {}
-for col in X.columns:
-    if df_clean[col].nunique() <= 10:
-        val = st.sidebar.selectbox(f"{col}", df_clean[col].unique())
-    else:
-        val = st.sidebar.number_input(f"{col}", float(df_clean[col].min()), float(df_clean[col].max()), float(df_clean[col].mean()))
-    input_data[col] = val
+    # Preprocess user input
+    input_df = pd.DataFrame([user_input])
+    for col in input_df.select_dtypes(include='object').columns:
+        input_df[col] = label_encoders[col].transform(input_df[col])
 
-# Convert input to DataFrame
-input_df = pd.DataFrame([input_data])
-
-# Prediction
-if st.button("Predict Salary Category"):
+    # Predict
     prediction = model.predict(input_df)[0]
-    st.success(f"Predicted Salary Category: {prediction}")
+    label = label_encoders['income'].inverse_transform([prediction])[0]
+
+    st.write("### 🧠 Prediction")
+    st.success(f"Predicted Income: {label}")
