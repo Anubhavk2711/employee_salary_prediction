@@ -10,7 +10,7 @@ st.title("Employee Salary Prediction App")
 # Load dataset
 @st.cache_data
 def load_data():
-    df = pd.read_csv("YOUR_PATH_HERE.csv")  # 🔁 REPLACE WITH YOUR FILE PATH
+    df = pd.read_csv("adult 3.csv")  # 🔁 REPLACE WITH YOUR FILE PATH
     return df
 
 data = load_data()
