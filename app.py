@@ -9,7 +9,7 @@ st.title("Income Prediction Web App")
 st.write("This app predicts whether a person's income is >50K or <=50K")
 
 # Upload dataset
-uploaded_file = st.file_uploader("Upload CSV file", type="csv")
+uploaded_file = st.file_uploader("adult 3.csv", type="csv")
 if uploaded_file is not None:
     df = pd.read_csv(uploaded_file)
 
